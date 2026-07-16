@@ -32,8 +32,7 @@ body {
   background-attachment: fixed;
   color: var(--cream);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   padding: 24px 16px;
   overflow-x: hidden;
   position: relative;
@@ -70,6 +69,7 @@ body {
   z-index: 1;
   width: 100%;
   max-width: 480px;
+  margin: auto;
 }
 
 .screen {
@@ -195,6 +195,12 @@ h1 {
 
 .btn-play.playing {
   animation: pulse 1s ease-in-out infinite;
+}
+
+.btn-play:disabled {
+  opacity: 0.55;
+  cursor: default;
+  box-shadow: none;
 }
 
 @keyframes pulse {

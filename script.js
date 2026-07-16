@@ -9,6 +9,8 @@
     hintsShown: 0,
     player: null,
     playerReady: false,
+    gameStarted: false,
+    songReady: false,
     playTimeout: null,
     clipToken: 0,
     awaitingPlayToken: null
@@ -20,6 +22,7 @@
 
   var startBtn = document.getElementById("start-btn");
   var playBtn = document.getElementById("play-btn");
+  var playText = playBtn.querySelector(".play-text");
   var songCounter = document.getElementById("song-counter");
   var progressFill = document.getElementById("progress-fill");
   var answerForm = document.getElementById("answer-form");
@@ -46,6 +49,12 @@
     return s;
   }
 
+  function setPlayButtonReady(ready) {
+    state.songReady = ready;
+    playBtn.disabled = !ready;
+    playText.textContent = ready ? "השמע" : "טוען...";
+  }
+
   function loadSong(index) {
     var song = SONGS[index];
     state.hintsShown = 0;
@@ -58,6 +67,7 @@
     songCounter.textContent = "שיר " + (index + 1) + "/" + SONGS.length;
     progressFill.style.width = ((index) / SONGS.length * 100) + "%";
     playBtn.classList.remove("playing");
+    setPlayButtonReady(false);
     state.clipToken++;
     state.awaitingPlayToken = null;
     if (state.playTimeout) {
@@ -74,7 +84,7 @@
 
   function playClip() {
     var song = SONGS[state.currentIndex];
-    if (!state.playerReady || !state.player) {
+    if (!state.playerReady || !state.player || !state.songReady) {
       return;
     }
     if (state.playTimeout) {
@@ -87,9 +97,7 @@
     playBtn.classList.add("playing");
     state.player.seekTo(song.startSeconds, true);
     state.player.playVideo();
-    // בדפדפני מובייל הקריאה הראשונה ל-playVideo אחרי טעינת סרטון חדש
-    // נחסמת לפעמים בשקט (מדיניות autoplay). אם אחרי רגע לא התקבל אירוע
-    // PLAYING, מנסים שוב אוטומטית כדי שמשתמש לא יצטרך ללחוץ פעמיים.
+    // רשת ביטחון: אם משום מה אין אירוע PLAYING תוך רגע, מנסים שוב.
     setTimeout(function () {
       if (state.awaitingPlayToken === myToken) {
         state.player.playVideo();
@@ -98,6 +106,10 @@
   }
 
   function handlePlayerStateChange(event) {
+    if (event.data === YT.PlayerState.CUED) {
+      setPlayButtonReady(true);
+      return;
+    }
     if (event.data !== YT.PlayerState.PLAYING) {
       return;
     }
@@ -191,15 +203,10 @@
   }
 
   function startGame() {
+    state.gameStarted = true;
     state.currentIndex = 0;
     loadSong(0);
     showScreen(songScreen);
-    // "מעוררים" את הפלייר בתוך אותה לחיצת משתמש כדי לעקוף חסימת
-    // autoplay במובייל בהשמעה הראשונה של המשחק.
-    if (state.playerReady && state.player) {
-      state.player.playVideo();
-      state.player.pauseVideo();
-    }
   }
 
   function openGift() {
@@ -267,6 +274,9 @@
       events: {
         onReady: function () {
           state.playerReady = true;
+          if (state.gameStarted) {
+            loadSong(state.currentIndex);
+          }
         },
         onStateChange: handlePlayerStateChange
       }
