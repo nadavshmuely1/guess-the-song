@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>נחש את השיר 🎵</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="bg-shapes" aria-hidden="true">
+  <span class="shape s1"></span>
+  <span class="shape s2"></span>
+  <span class="shape s3"></span>
+  <span class="shape s4"></span>
+</div>
+
+<main class="app">
+
+  <!-- מסך פתיחה -->
+  <section id="intro-screen" class="screen active">
+    <div class="card intro-card">
+      <div class="intro-emoji">🎧</div>
+      <h1>נחש את השיר</h1>
+      <p class="subtitle">תשמעו 5 שניות מכל שיר, תנסו לנחש מה השם שלו. יש רמזים אם נתקעים!</p>
+      <button id="start-btn" class="btn btn-primary">🚀 התחל משחק</button>
+    </div>
+  </section>
+
+  <!-- מסך שיר -->
+  <section id="song-screen" class="screen">
+    <div class="card song-card">
+      <div class="progress-row">
+        <span id="song-counter" class="song-counter">שיר 1/6</span>
+        <div class="progress-track">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+      </div>
+
+      <button id="play-btn" class="btn btn-play">
+        <span class="play-icon">▶</span>
+        <span class="play-text">השמע</span>
+      </button>
+      <p class="play-hint">אפשר ללחוץ כמה פעמים שרוצים</p>
+
+      <form id="answer-form" class="answer-form" autocomplete="off">
+        <input
+          type="text"
+          id="answer-input"
+          class="answer-input"
+          placeholder="מה שם השיר?"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        >
+        <button type="submit" class="btn btn-primary">בדוק תשובה</button>
+      </form>
+
+      <div id="feedback" class="feedback"></div>
+
+      <div class="hints-section">
+        <button id="hint-btn" class="btn btn-hint">💡 רמז (<span id="hints-left">4</span> נותרו)</button>
+        <ul id="hints-list" class="hints-list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- מסך סיום -->
+  <section id="end-screen" class="screen">
+    <div class="card end-card">
+      <h2 class="end-title">כל הכבוד! סיימתם את כל השירים 🎉</h2>
+      <p class="end-subtitle">לחצו על המתנה לראות מה קיבלתם</p>
+      <div id="gift-box" class="gift-box" role="button" tabindex="0" aria-label="פתח מתנה">
+        <span class="gift-emoji">🎁</span>
+      </div>
+      <div id="prize-text" class="prize-text hidden">
+        מזל טוב, השלמת את המשימה! 🎉🎉<br>
+        הפרס: רמקול JBL חדש 🔊
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- קונטיינר לנגן היוטיוב - מוסתר ויזואלית לגמרי, משמש רק לסאונד -->
+<div id="yt-player-wrap" aria-hidden="true">
+  <div id="yt-player"></div>
+</div>
+
+<div id="confetti-container" class="confetti-container" aria-hidden="true"></div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script src="songs.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
