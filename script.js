@@ -29,7 +29,7 @@
   var hintsLeftEl = document.getElementById("hints-left");
   var hintsList = document.getElementById("hints-list");
   var giftBox = document.getElementById("gift-box");
-  var prizeText = document.getElementById("prize-text");
+  var prizeReveal = document.getElementById("prize-reveal");
 
   function showScreen(el) {
     [introScreen, songScreen, endScreen].forEach(function (s) {
@@ -192,13 +192,16 @@
       return;
     }
     giftBox.classList.add("opened");
-    prizeText.classList.remove("hidden");
+    setTimeout(function () {
+      giftBox.classList.add("hidden-after-open");
+    }, 500);
+    prizeReveal.classList.remove("hidden");
     launchConfetti();
   }
 
   function launchConfetti() {
     var container = document.getElementById("confetti-container");
-    var colors = ["#6c5ce7", "#fd79a8", "#ffeaa7", "#00b894", "#ff9ff3", "#74b9ff"];
+    var colors = ["#ffe066", "#ffb800", "#fff4c2", "#ffffff", "#1c2140"];
     var pieceCount = 90;
     for (var i = 0; i < pieceCount; i++) {
       var piece = document.createElement("div");
