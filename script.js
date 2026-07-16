@@ -82,10 +82,19 @@
       state.playTimeout = null;
     }
     state.clipToken++;
-    state.awaitingPlayToken = state.clipToken;
+    var myToken = state.clipToken;
+    state.awaitingPlayToken = myToken;
     playBtn.classList.add("playing");
     state.player.seekTo(song.startSeconds, true);
     state.player.playVideo();
+    // בדפדפני מובייל הקריאה הראשונה ל-playVideo אחרי טעינת סרטון חדש
+    // נחסמת לפעמים בשקט (מדיניות autoplay). אם אחרי רגע לא התקבל אירוע
+    // PLAYING, מנסים שוב אוטומטית כדי שמשתמש לא יצטרך ללחוץ פעמיים.
+    setTimeout(function () {
+      if (state.awaitingPlayToken === myToken) {
+        state.player.playVideo();
+      }
+    }, 350);
   }
 
   function handlePlayerStateChange(event) {
@@ -185,6 +194,12 @@
     state.currentIndex = 0;
     loadSong(0);
     showScreen(songScreen);
+    // "מעוררים" את הפלייר בתוך אותה לחיצת משתמש כדי לעקוף חסימת
+    // autoplay במובייל בהשמעה הראשונה של המשחק.
+    if (state.playerReady && state.player) {
+      state.player.playVideo();
+      state.player.pauseVideo();
+    }
   }
 
   function openGift() {
