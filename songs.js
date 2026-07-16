@@ -42,8 +42,13 @@ const SONGS = [
     id: 4,
     videoId: "Ve0-QfbVcAQ", // Dudu Faruk 2 - Stephane Legar (prod. by Jordi)
     startSeconds: 10,
-    title: "דודו פארוק 2 - סטפן לגר",
+    title: "סטפן לגר",
     artist: "דודו פארוק",
+    answers: [
+      "Stephane Legar",
+      "דודו פארוק 2 סטפן לגר",
+      "דודו פארוק 2 - סטפן לגר"
+    ],
     hints: [
       "מאחורי הדמות עומד זמר וקומיקאי ישראלי שיצר אותה עוד ב-2013",
       "השם האמיתי שלו הוא אורי קומאי",

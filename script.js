@@ -9,7 +9,9 @@
     hintsShown: 0,
     player: null,
     playerReady: false,
-    playTimeout: null
+    playTimeout: null,
+    clipToken: 0,
+    awaitingPlayToken: null
   };
 
   var introScreen = document.getElementById("intro-screen");
@@ -56,6 +58,12 @@
     songCounter.textContent = "שיר " + (index + 1) + "/" + SONGS.length;
     progressFill.style.width = ((index) / SONGS.length * 100) + "%";
     playBtn.classList.remove("playing");
+    state.clipToken++;
+    state.awaitingPlayToken = null;
+    if (state.playTimeout) {
+      clearTimeout(state.playTimeout);
+      state.playTimeout = null;
+    }
 
     if (state.playerReady && state.player && typeof state.player.cueVideoById === "function") {
       state.player.cueVideoById({ videoId: song.videoId, startSeconds: song.startSeconds });
@@ -73,27 +81,56 @@
       clearTimeout(state.playTimeout);
       state.playTimeout = null;
     }
+    state.clipToken++;
+    state.awaitingPlayToken = state.clipToken;
     playBtn.classList.add("playing");
     state.player.seekTo(song.startSeconds, true);
     state.player.playVideo();
+  }
+
+  function handlePlayerStateChange(event) {
+    if (event.data !== YT.PlayerState.PLAYING) {
+      return;
+    }
+    if (state.awaitingPlayToken === null) {
+      return;
+    }
+    var myToken = state.awaitingPlayToken;
+    state.awaitingPlayToken = null;
+    if (state.playTimeout) {
+      clearTimeout(state.playTimeout);
+    }
     state.playTimeout = setTimeout(function () {
-      state.player.pauseVideo();
-      playBtn.classList.remove("playing");
+      if (myToken === state.clipToken) {
+        state.player.pauseVideo();
+        playBtn.classList.remove("playing");
+      }
       state.playTimeout = null;
     }, CLIP_SECONDS * 1000);
+  }
+
+  function acceptedAnswers(song) {
+    var variants = [song.title];
+    if (song.artist) {
+      variants.push(song.artist + " " + song.title);
+      variants.push(song.title + " " + song.artist);
+    }
+    if (song.answers) {
+      variants = variants.concat(song.answers);
+    }
+    return variants.map(normalize);
   }
 
   function handleAnswerSubmit(e) {
     e.preventDefault();
     var song = SONGS[state.currentIndex];
     var guess = normalize(answerInput.value);
-    var correct = normalize(song.title);
 
     if (!guess) {
       return;
     }
 
-    if (guess === correct) {
+    if (acceptedAnswers(song).indexOf(guess) !== -1) {
       feedback.textContent = "✔ נכון! כל הכבוד";
       feedback.className = "feedback correct pop";
       songScreen.querySelector(".card").classList.add("pop");
@@ -212,7 +249,8 @@
       events: {
         onReady: function () {
           state.playerReady = true;
-        }
+        },
+        onStateChange: handlePlayerStateChange
       }
     });
   };
