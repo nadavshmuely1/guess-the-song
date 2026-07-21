@@ -28,8 +28,21 @@
 
 <main class="app">
 
+  <!-- מסך טעינה -->
+  <section id="loading-screen" class="screen active">
+    <div class="card loading-card">
+      <div class="loading-notes" aria-hidden="true">
+        <span>🎵</span><span>🎶</span><span>🎵</span>
+      </div>
+      <h2 class="loading-title">מכינים לכם את המשחק</h2>
+      <p class="loading-sub">רק רגע...</p>
+      <div class="loading-bar"><div id="loading-bar-fill" class="loading-bar-fill"></div></div>
+      <p id="loading-count" class="loading-count">טוען שירים 0/6</p>
+    </div>
+  </section>
+
   <!-- מסך פתיחה -->
-  <section id="intro-screen" class="screen active">
+  <section id="intro-screen" class="screen">
     <div class="card intro-card">
       <div class="intro-emoji">🎧</div>
       <h1>נחש את השיר</h1>
@@ -106,10 +119,9 @@
 
 </main>
 
-<!-- קונטיינר לנגן היוטיוב - מוסתר ויזואלית לגמרי, משמש רק לסאונד -->
-<div id="yt-player-wrap" aria-hidden="true">
-  <div id="yt-player"></div>
-</div>
+<!-- קונטיינר לנגני היוטיוב - מוסתרים ויזואלית לגמרי, משמשים רק לסאונד.
+     נגן נפרד לכל שיר (6) כדי לטעון את כולם מראש במקביל. נוצרים ב-JS. -->
+<div id="yt-player-wrap" aria-hidden="true"></div>
 
 <div id="confetti-container" class="confetti-container" aria-hidden="true"></div>
 

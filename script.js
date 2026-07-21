@@ -3,25 +3,35 @@
 
   var CLIP_SECONDS = 5;
   var MAX_HINTS = 4;
+  var LOADING_TIMEOUT_MS = 12000; // גבול זמן למסך הטעינה (שלא ייתקע לנצח)
+  var START_WAIT_MS = 4500;       // כמה לחכות לניגון אמיתי אחרי לחיצה לפני חזרה ל"השמע"
+                                  // (ארוך מזמן אגירה טיפוסי כדי לא לרצד)
 
   var state = {
     currentIndex: 0,
     hintsShown: 0,
-    player: null,
-    playerReady: false,
-    gameStarted: false,
+    players: [],        // נגן YouTube נפרד לכל שיר
+    playerReady: [],    // האם הנגן של שיר i טעון (CUED) ומוכן לניגון
+    readyCount: 0,
     songReady: false,
-    cuedVideoId: null,
+    gameStarted: false,
+    loadingDone: false,
     playTimeout: null,
+    startTimeout: null,
     countdownInterval: null,
     clipToken: 0,
     awaitingPlayToken: null,
     armedToken: null
   };
 
+  var loadingScreen = document.getElementById("loading-screen");
   var introScreen = document.getElementById("intro-screen");
   var songScreen = document.getElementById("song-screen");
   var endScreen = document.getElementById("end-screen");
+
+  var loadingBarFill = document.getElementById("loading-bar-fill");
+  var loadingCount = document.getElementById("loading-count");
+  var playerWrap = document.getElementById("yt-player-wrap");
 
   var startBtn = document.getElementById("start-btn");
   var playBtn = document.getElementById("play-btn");
@@ -40,7 +50,7 @@
   var prizeReveal = document.getElementById("prize-reveal");
 
   function showScreen(el) {
-    [introScreen, songScreen, endScreen].forEach(function (s) {
+    [loadingScreen, introScreen, songScreen, endScreen].forEach(function (s) {
       s.classList.remove("active");
     });
     el.classList.add("active");
@@ -54,10 +64,117 @@
     return s;
   }
 
-  // מצבי הכפתור: "loading" = ספינר בזמן טעינת השיר, "ready" = מוכן להשמעה,
-  // "error" = הסרטון לא נטען (שגיאת יוטיוב).
+  function currentPlayer() {
+    return state.players[state.currentIndex];
+  }
+
+  // ===================== טעינה מקבילה של כל השירים =====================
+
+  function updateLoadingProgress() {
+    var pct = Math.round((state.readyCount / SONGS.length) * 100);
+    if (loadingBarFill) {
+      loadingBarFill.style.width = pct + "%";
+    }
+    if (loadingCount) {
+      loadingCount.textContent = "טוען שירים " + state.readyCount + "/" + SONGS.length;
+    }
+  }
+
+  function finishLoading() {
+    if (state.loadingDone) {
+      return;
+    }
+    state.loadingDone = true;
+    showScreen(introScreen);
+  }
+
+  function markPlayerReady(i) {
+    if (!state.playerReady[i]) {
+      state.playerReady[i] = true;
+      state.readyCount++;
+      updateLoadingProgress();
+      if (state.readyCount >= SONGS.length) {
+        finishLoading();
+      }
+    }
+  }
+
+  function handleStateChange(i, event) {
+    // כשהנגן טעון (CUED) — מסמנים אותו מוכן. במהלך הטעינה זה מקדם את מסך
+    // הטעינה; במסך השיר זה מפעיל את כפתור "השמע".
+    if (event.data === YT.PlayerState.CUED) {
+      markPlayerReady(i);
+      if (state.gameStarted && i === state.currentIndex &&
+          songScreen.classList.contains("active")) {
+        setPlayState("ready");
+      }
+      return;
+    }
+    // מתחילים את הסטופר רק כשהשיר של המסך הנוכחי באמת מתנגן.
+    if (event.data === YT.PlayerState.PLAYING &&
+        state.gameStarted &&
+        i === state.currentIndex &&
+        state.awaitingPlayToken !== null) {
+      armClip(state.awaitingPlayToken);
+    }
+  }
+
+  function handleError(i, event) {
+    // סרטון שלא ניתן לטעינה/הטמעה: מסמנים "מוכן" כדי לא לתקוע את מסך הטעינה.
+    markPlayerReady(i);
+    if (i === state.currentIndex && songScreen.classList.contains("active")) {
+      stopClip();
+      setPlayState("error");
+      feedback.textContent = "לא ניתן לנגן את השיר הזה כרגע 😕";
+      feedback.className = "feedback wrong";
+    }
+  }
+
+  function createAllPlayers() {
+    SONGS.forEach(function (song, i) {
+      var div = document.createElement("div");
+      div.id = "yt-player-" + i;
+      playerWrap.appendChild(div);
+      state.playerReady[i] = false;
+      state.players[i] = new YT.Player(div, {
+        height: "0",
+        width: "0",
+        videoId: song.videoId,
+        playerVars: {
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1
+        },
+        events: {
+          onReady: (function (idx, s) {
+            return function () {
+              try {
+                state.players[idx].cueVideoById({
+                  videoId: s.videoId,
+                  startSeconds: s.startSeconds
+                });
+              } catch (e) {}
+            };
+          })(i, song),
+          onStateChange: (function (idx) {
+            return function (e) { handleStateChange(idx, e); };
+          })(i),
+          onError: (function (idx) {
+            return function (e) { handleError(idx, e); };
+          })(i)
+        }
+      });
+    });
+  }
+
+  // ===================== כפתור ההשמעה =====================
+
   function setPlayState(mode) {
     state.songReady = (mode === "ready");
+    playBtn.classList.remove("starting");
     playBtn.classList.toggle("loading", mode === "loading");
     playBtn.disabled = (mode !== "ready");
     if (mode === "ready") {
@@ -70,16 +187,12 @@
   }
 
   function resetClipTimers() {
-    if (state.playTimeout) {
-      clearTimeout(state.playTimeout);
-      state.playTimeout = null;
-    }
-    if (state.countdownInterval) {
-      clearInterval(state.countdownInterval);
-      state.countdownInterval = null;
-    }
+    if (state.playTimeout) { clearTimeout(state.playTimeout); state.playTimeout = null; }
+    if (state.startTimeout) { clearTimeout(state.startTimeout); state.startTimeout = null; }
+    if (state.countdownInterval) { clearInterval(state.countdownInterval); state.countdownInterval = null; }
     state.armedToken = null;
     playBtn.classList.remove("playing");
+    playBtn.classList.remove("starting");
     playCount.textContent = "";
   }
 
@@ -88,20 +201,23 @@
     if (state.songReady) {
       playText.textContent = "השמע";
     }
-    if (state.player && typeof state.player.pauseVideo === "function") {
-      state.player.pauseVideo();
+    var p = currentPlayer();
+    if (p && typeof p.pauseVideo === "function") {
+      try { p.pauseVideo(); } catch (e) {}
     }
   }
 
   // מפעיל את חיווי הניגון (טבעת מתרוקנת + ספירת שניות) ומתזמן עצירה אחרי 5 שניות.
-  // מוגן כך שכל לחיצה על "השמע" מפעיל אותו פעם אחת בלבד (armedToken).
+  // נקרא רק כשידוע שהשיר באמת מתנגן (אירוע PLAYING או ניגון קיים בלחיצה חוזרת).
   function armClip(myToken) {
     if (state.armedToken === myToken) {
       return;
     }
     state.armedToken = myToken;
     state.awaitingPlayToken = null;
+    if (state.startTimeout) { clearTimeout(state.startTimeout); state.startTimeout = null; }
 
+    playBtn.classList.remove("starting");
     playBtn.classList.add("playing");
     playText.textContent = "מתנגן";
 
@@ -113,9 +229,7 @@
     // ספירת שניות 5..1
     var remaining = CLIP_SECONDS;
     playCount.textContent = String(remaining);
-    if (state.countdownInterval) {
-      clearInterval(state.countdownInterval);
-    }
+    if (state.countdownInterval) { clearInterval(state.countdownInterval); }
     state.countdownInterval = setInterval(function () {
       remaining--;
       if (remaining >= 1) {
@@ -123,9 +237,7 @@
       }
     }, 1000);
 
-    if (state.playTimeout) {
-      clearTimeout(state.playTimeout);
-    }
+    if (state.playTimeout) { clearTimeout(state.playTimeout); }
     state.playTimeout = setTimeout(function () {
       if (myToken === state.clipToken) {
         stopClip();
@@ -135,6 +247,7 @@
 
   function loadSong(index) {
     var song = SONGS[index];
+    state.currentIndex = index;
     state.hintsShown = 0;
     answerInput.value = "";
     feedback.textContent = "";
@@ -144,18 +257,15 @@
     hintBtn.disabled = false;
     songCounter.textContent = "שיר " + (index + 1) + "/" + SONGS.length;
     progressFill.style.width = ((index) / SONGS.length * 100) + "%";
-    stopClip();
+    // איפוס חיווי בלבד — לא עוצרים כאן את הנגן (הנגן החדש ממילא לא מנגן,
+    // והנגן הקודם כבר נעצר ב-goToNextSong). מונע מרוץ pause→play.
+    resetClipTimers();
     state.clipToken++;
     state.awaitingPlayToken = null;
 
-    // אם השיר הזה כבר טעון ומוכן (למשל שיר 1 שנטען מראש במסך הפתיחה) —
-    // לא צריך לטעון שוב, הכפתור מוכן מיידית.
-    if (state.cuedVideoId === song.videoId && state.songReady) {
+    // הנגן כבר נטען מראש — הכפתור מוכן מיידית. אם עדיין לא (נדיר), מציג "טוען".
+    if (state.playerReady[index]) {
       setPlayState("ready");
-    } else if (state.playerReady && state.player && typeof state.player.cueVideoById === "function") {
-      setPlayState("loading");
-      state.cuedVideoId = song.videoId;
-      state.player.cueVideoById({ videoId: song.videoId, startSeconds: song.startSeconds });
     } else {
       setPlayState("loading");
     }
@@ -165,60 +275,57 @@
 
   function playClip() {
     var song = SONGS[state.currentIndex];
-    if (!state.playerReady || !state.player || !state.songReady) {
+    var p = currentPlayer();
+    if (!p || !state.playerReady[state.currentIndex]) {
       return;
     }
-    // האם השיר כבר מתנגן ברגע הלחיצה (לחיצה חוזרת)?
-    var alreadyPlaying = typeof state.player.getPlayerState === "function" &&
-      state.player.getPlayerState() === YT.PlayerState.PLAYING;
-    // איפוס מונים/חיווי בלי לעצור את הנגן (נעצור ממילא בעוד רגע ע"י ניגון חדש).
+    // עצירת כל שאר הנגנים כדי שלא ינגנו במקביל.
+    state.players.forEach(function (pp, idx) {
+      if (idx !== state.currentIndex && pp && typeof pp.pauseVideo === "function") {
+        try { pp.pauseVideo(); } catch (e) {}
+      }
+    });
+
+    var wasPlaying = typeof p.getPlayerState === "function" &&
+      p.getPlayerState() === YT.PlayerState.PLAYING;
+
     resetClipTimers();
     state.clipToken++;
     var myToken = state.clipToken;
     state.awaitingPlayToken = myToken;
-    state.player.seekTo(song.startSeconds, true);
-    state.player.playVideo();
-    // לחיצה חוזרת בזמן ניגון: יוטיוב לא ישלח PLAYING חדש, אז מדליקים חיווי מיד.
-    if (alreadyPlaying) {
+
+    // חיווי "רגע..." — הלחיצה נקלטה, אבל הסטופר לא מתחיל עד שיש ניגון אמיתי.
+    playBtn.classList.add("starting");
+    playText.textContent = "רגע...";
+
+    try {
+      p.unMute();
+      p.seekTo(song.startSeconds, true);
+      p.playVideo();
+    } catch (e) {}
+
+    // לחיצה חוזרת בזמן שהשיר כבר מתנגן: אין PLAYING חדש, אבל זה ניגון אמיתי.
+    if (wasPlaying) {
       armClip(myToken);
     }
-    // רשת ביטחון: אם הדפדפן חסם את הניגון (autoplay), מנסים שוב.
+
+    // ניסיון נוסף אם הדפדפן חסם autoplay.
     setTimeout(function () {
       if (state.clipToken === myToken && state.armedToken !== myToken) {
-        state.player.playVideo();
+        try { p.playVideo(); } catch (e) {}
       }
-    }, 250);
-    // מפעילים את החיווי לכל היותר תוך חצי שנייה — גם אם יוטיוב לא שלח
-    // אירוע PLAYING חדש (למשל בלחיצה חוזרת בזמן שהשיר כבר מתנגן).
-    setTimeout(function () {
+    }, 300);
+
+    // אם לא התחיל ניגון אמיתי תוך זמן סביר (למשל לחיצה ראשונה בטלפון שלא
+    // "תפסה") — חוזרים ל"השמע" כדי שאפשר יהיה ללחוץ שוב. הסטופר לא רץ.
+    state.startTimeout = setTimeout(function () {
       if (state.clipToken === myToken && state.armedToken !== myToken) {
-        armClip(myToken);
+        playBtn.classList.remove("starting");
+        if (state.playerReady[state.currentIndex]) {
+          setPlayState("ready");
+        }
       }
-    }, 500);
-  }
-
-  function handlePlayerStateChange(event) {
-    if (event.data === YT.PlayerState.CUED) {
-      state.songReady = true;
-      // מפעילים את הכפתור רק אם אנחנו במסך שיר (לא בזמן טעינה-מראש בפתיחה).
-      if (songScreen.classList.contains("active")) {
-        setPlayState("ready");
-      }
-      return;
-    }
-    if (event.data === YT.PlayerState.PLAYING && state.awaitingPlayToken !== null) {
-      armClip(state.awaitingPlayToken);
-    }
-  }
-
-  function handlePlayerError() {
-    // הסרטון לא ניתן לטעינה/הטמעה. לא נתקעים על "טוען" — מציגים שגיאה.
-    if (songScreen.classList.contains("active")) {
-      stopClip();
-      setPlayState("error");
-      feedback.textContent = "לא ניתן לנגן את השיר הזה כרגע 😕";
-      feedback.className = "feedback wrong";
-    }
+    }, START_WAIT_MS);
   }
 
   function acceptedAnswers(song) {
@@ -277,12 +384,12 @@
 
   function goToNextSong() {
     stopClip();
-    state.currentIndex++;
-    if (state.currentIndex >= SONGS.length) {
+    var next = state.currentIndex + 1;
+    if (next >= SONGS.length) {
       progressFill.style.width = "100%";
       showScreen(endScreen);
     } else {
-      loadSong(state.currentIndex);
+      loadSong(next);
       showScreen(songScreen);
     }
   }
@@ -342,47 +449,16 @@
     }
   });
 
-  // YouTube IFrame API
-  function createPlayer() {
-    state.player = new YT.Player("yt-player", {
-      height: "0",
-      width: "0",
-      videoId: SONGS[0].videoId,
-      playerVars: {
-        controls: 0,
-        disablekb: 1,
-        fs: 0,
-        modestbranding: 1,
-        rel: 0,
-        playsinline: 1
-      },
-      events: {
-        onReady: function () {
-          state.playerReady = true;
-          if (state.gameStarted) {
-            loadSong(state.currentIndex);
-          } else {
-            // טעינה מראש של שיר 1 כבר במסך הפתיחה, כדי שיהיה מוכן מיידית
-            // כשלוחצים "התחל" (מסתיר את זמן ה-cold start).
-            state.cuedVideoId = SONGS[0].videoId;
-            state.player.cueVideoById({
-              videoId: SONGS[0].videoId,
-              startSeconds: SONGS[0].startSeconds
-            });
-          }
-        },
-        onStateChange: handlePlayerStateChange,
-        onError: handlePlayerError
-      }
-    });
-  }
+  // גבול זמן כללי: גם אם משהו בטעינה נתקע, פותחים את המשחק.
+  setTimeout(finishLoading, LOADING_TIMEOUT_MS);
 
-  // אם ה-API כבר נטען (למשל מ-cache) לפני שהסקריפט הזה רץ — יוצרים מיד.
-  // אחרת ממתינים ל-callback. זה מונע מרוץ תזמון שבו ה-callback נקרא לפני
-  // שהוגדר, והנגן לעולם לא נוצר.
+  // YouTube IFrame API — אם כבר נטען (מ-cache) יוצרים מיד, אחרת ממתינים ל-callback.
+  function onApiReady() {
+    createAllPlayers();
+  }
   if (window.YT && window.YT.Player) {
-    createPlayer();
+    onApiReady();
   } else {
-    window.onYouTubeIframeAPIReady = createPlayer;
+    window.onYouTubeIframeAPIReady = onApiReady;
   }
 })();

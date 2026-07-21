@@ -96,6 +96,71 @@ body {
   backdrop-filter: blur(6px);
 }
 
+/* מסך טעינה */
+.loading-notes {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 40px;
+}
+
+.loading-notes span {
+  animation: noteBounce 1.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px rgba(255, 184, 0, 0.5));
+}
+
+.loading-notes span:nth-child(2) { animation-delay: 0.2s; }
+.loading-notes span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes noteBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+.loading-title {
+  font-size: 24px;
+  margin: 6px 0 8px;
+  color: var(--gold-1);
+  text-shadow: 0 2px 0 #000, 0 0 18px rgba(255, 184, 0, 0.4);
+}
+
+.loading-sub {
+  color: var(--cream);
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 22px;
+  animation: pulseText 1.4s ease-in-out infinite;
+}
+
+@keyframes pulseText {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.loading-bar {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--gold-2), var(--gold-1));
+  border-radius: 10px;
+  transition: width 0.4s ease;
+  box-shadow: 0 0 14px rgba(255, 184, 0, 0.6);
+}
+
+.loading-count {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+
 /* מסך פתיחה */
 .intro-emoji {
   font-size: 64px;
@@ -263,21 +328,25 @@ h1 {
   color: var(--gold-1);
 }
 
-/* מצב טעינה: ספינר מסתובב, האייקון מוסתר */
+/* מצב טעינה (לפני מוכנות) ומצב "רגע..." (אחרי לחיצה, ממתין לתחילת ניגון):
+   ספינר מסתובב, האייקון מוסתר */
 .btn-play.loading {
   opacity: 0.75;
 }
 
-.btn-play.loading .play-icon {
+.btn-play.loading .play-icon,
+.btn-play.starting .play-icon {
   display: none;
 }
 
-.btn-play.loading .play-ring {
+.btn-play.loading .play-ring,
+.btn-play.starting .play-ring {
   opacity: 1;
   animation: ringSpin 0.9s linear infinite;
 }
 
-.btn-play.loading .ring-progress {
+.btn-play.loading .ring-progress,
+.btn-play.starting .ring-progress {
   stroke-dasharray: 30 90;
   stroke-dashoffset: 0;
 }
