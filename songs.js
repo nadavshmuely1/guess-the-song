@@ -14,7 +14,7 @@ const SONGS = [
   },
   {
     id: 2,
-    videoId: "qpEnORBysj8", // Eric Clapton - Wonderful Tonight [Official HQ]
+    videoId: "Pu5c4aEg3NM", // Eric Clapton - Topic (גרסת אולפן רשמית, מותרת להטמעה)
     startSeconds: 30,
     title: "Wonderful Tonight",
     artist: "Eric Clapton",

@@ -185,31 +185,133 @@ h1 {
   background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
   color: #1a1200;
   font-size: 20px;
-  padding: 22px;
+  padding: 18px 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   box-shadow: 0 10px 28px rgba(255, 184, 0, 0.5);
-}
-
-.btn-play.playing {
-  animation: pulse 1s ease-in-out infinite;
+  transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .btn-play:disabled {
-  opacity: 0.55;
   cursor: default;
-  box-shadow: none;
 }
 
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 10px 28px rgba(255, 184, 0, 0.5); }
-  50% { box-shadow: 0 10px 44px rgba(255, 184, 0, 0.85); }
+/* מצב ניגון: הכפתור הופך ל"במה" כהה עם טבעת וזהב */
+.btn-play.playing {
+  background: linear-gradient(135deg, #23284d, #0a0d1c);
+  color: var(--gold-1);
+  animation: playGlow 1.4s ease-in-out infinite;
+}
+
+@keyframes playGlow {
+  0%, 100% { box-shadow: 0 10px 30px rgba(255, 184, 0, 0.35); }
+  50% { box-shadow: 0 10px 46px rgba(255, 184, 0, 0.7); }
+}
+
+/* אזור המדיה של הכפתור (אייקון / ספינר / טבעת+מונה) */
+.play-media {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .play-icon {
-  font-size: 18px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.play-ring {
+  position: absolute;
+  inset: 0;
+  width: 44px;
+  height: 44px;
+  opacity: 0;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  pointer-events: none;
+}
+
+.ring-track {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.16);
+  stroke-width: 4;
+}
+
+.ring-progress {
+  fill: none;
+  stroke: #1a1200;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 119.38;
+  stroke-dashoffset: 0;
+}
+
+.play-count {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--gold-1);
+}
+
+/* מצב טעינה: ספינר מסתובב, האייקון מוסתר */
+.btn-play.loading {
+  opacity: 0.75;
+}
+
+.btn-play.loading .play-icon {
+  display: none;
+}
+
+.btn-play.loading .play-ring {
+  opacity: 1;
+  animation: ringSpin 0.9s linear infinite;
+}
+
+.btn-play.loading .ring-progress {
+  stroke-dasharray: 30 90;
+  stroke-dashoffset: 0;
+}
+
+@keyframes ringSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* התרוקנות הטבעת לאורך 5 שניות הניגון (119.38 = היקף המעגל, r=19) */
+@keyframes ringDeplete {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 119.38; }
+}
+
+/* מצב ניגון: טבעת מתרוקנת + מונה שניות, האייקון מוסתר */
+.btn-play.playing .play-icon {
+  display: none;
+}
+
+.btn-play.playing .play-ring {
+  opacity: 1;
+}
+
+.btn-play.playing .ring-track {
+  stroke: rgba(255, 255, 255, 0.18);
+}
+
+.btn-play.playing .ring-progress {
+  stroke: var(--gold-1);
+}
+
+.btn-play.playing .play-count {
+  display: flex;
 }
 
 .play-hint {

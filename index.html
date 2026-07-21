@@ -49,7 +49,14 @@
       </div>
 
       <button id="play-btn" class="btn btn-play">
-        <span class="play-icon">▶</span>
+        <span class="play-media">
+          <svg class="play-ring" viewBox="0 0 44 44" aria-hidden="true">
+            <circle class="ring-track" cx="22" cy="22" r="19"></circle>
+            <circle class="ring-progress" cx="22" cy="22" r="19"></circle>
+          </svg>
+          <span class="play-icon">▶</span>
+          <span class="play-count"></span>
+        </span>
         <span class="play-text">השמע</span>
       </button>
       <p class="play-hint">אפשר ללחוץ כמה פעמים שרוצים</p>
