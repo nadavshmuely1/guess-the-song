@@ -343,7 +343,7 @@
   });
 
   // YouTube IFrame API
-  window.onYouTubeIframeAPIReady = function () {
+  function createPlayer() {
     state.player = new YT.Player("yt-player", {
       height: "0",
       width: "0",
@@ -375,5 +375,14 @@
         onError: handlePlayerError
       }
     });
-  };
+  }
+
+  // אם ה-API כבר נטען (למשל מ-cache) לפני שהסקריפט הזה רץ — יוצרים מיד.
+  // אחרת ממתינים ל-callback. זה מונע מרוץ תזמון שבו ה-callback נקרא לפני
+  // שהוגדר, והנגן לעולם לא נוצר.
+  if (window.YT && window.YT.Player) {
+    createPlayer();
+  } else {
+    window.onYouTubeIframeAPIReady = createPlayer;
+  }
 })();
