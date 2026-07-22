@@ -1,8 +1,10 @@
+// כל שיר מנוגן מקדימון אודיו רשמי של Apple (iTunes preview), מאוחסן מקומית.
+// clipStart = השנייה בתוך הקדימון שממנה מתחילים לנגן (5 שניות). ניתן לכוונן.
 const SONGS = [
   {
     id: 1,
-    videoId: "INKpPFwOQLY", // אושר כהן - כולם גנבים (Prod. By Nuri)
-    startSeconds: 45,
+    audio: "assets/audio/song1.m4a", // Osher Cohen - כולם גנבים (Apple preview)
+    clipStart: 0,
     title: "כולם גנבים",
     artist: "אושר כהן",
     hints: [
@@ -14,8 +16,8 @@ const SONGS = [
   },
   {
     id: 2,
-    videoId: "Pu5c4aEg3NM", // Eric Clapton - Topic (גרסת אולפן רשמית, מותרת להטמעה)
-    startSeconds: 30,
+    audio: "assets/audio/song2.m4a", // Eric Clapton - Wonderful Tonight (Apple preview)
+    clipStart: 0,
     title: "Wonderful Tonight",
     artist: "Eric Clapton",
     hints: [
@@ -27,8 +29,8 @@ const SONGS = [
   },
   {
     id: 3,
-    videoId: "hSSQzeNBSZw", // נוער שוליים - אמסטרדם
-    startSeconds: 20,
+    audio: "assets/audio/song3.m4a", // Noar Shulaim - אמסטרדם (Apple preview)
+    clipStart: 0,
     title: "אמסטרדם",
     artist: "נוער שוליים",
     hints: [
@@ -40,8 +42,8 @@ const SONGS = [
   },
   {
     id: 4,
-    videoId: "Ve0-QfbVcAQ", // Dudu Faruk 2 - Stephane Legar (prod. by Jordi)
-    startSeconds: 10,
+    audio: "assets/audio/song4.m4a", // Dudu Faruk - סטפן לגר (היהודי) (Apple preview)
+    clipStart: 0,
     title: "סטפן לגר",
     artist: "דודו פארוק",
     answers: [
@@ -58,8 +60,8 @@ const SONGS = [
   },
   {
     id: 5,
-    videoId: "4k24i0EXTr0", // ריקי גל - לגור איתו | קליפ
-    startSeconds: 15,
+    audio: "assets/audio/song5.m4a", // Riki Gal - לגור איתו (Apple preview)
+    clipStart: 0,
     title: "לגור איתו",
     artist: "ריקי גל",
     hints: [
@@ -71,8 +73,8 @@ const SONGS = [
   },
   {
     id: 6,
-    videoId: "UXU0_vRYYJI", // Louane - Secret
-    startSeconds: 20,
+    audio: "assets/audio/song6.m4a", // Louane - Secret (Apple preview)
+    clipStart: 0,
     title: "Secret",
     artist: "Louane",
     hints: [
